@@ -18,6 +18,9 @@ local function groupTitle(group)
     if key == wt.NOTLEVEL_KEY then
         return string.format(wt.L.LEVEL_FORMAT, group.level), unpack(wt.Theme.groupUnavailable)
     end
+    if key == wt.OTHER_CLASS_KEY then
+        return string.format(wt.L.LEVEL_FORMAT, group.level), unpack(wt.Theme.strong)
+    end
     return group.category.name or group.category.formattedName, unpack(wt.Theme.groupUnavailable)
 end
 
@@ -288,19 +291,26 @@ end
 
 -- One entry per display style. top: where the scroll area starts. reserve: room a paged half keeps
 -- free for the "Continues on ..." note. Items: what the view shows when it isn't paged.
+-- otherClassFooter: the footer while browsing another class, whose entries can't be ignored or
+-- compared with your ranks (see OtherClass.lua).
 local views = {
     ledger = {top = -84, footer = wt.L.LEDGER_HINT, empty = wt.L.LEDGER_EMPTY, Render = renderLedger,
+        otherClassFooter = wt.L.OTHER_CLASS_HINT,
         Items = function() return wt.spellListData end,
         Paginate = function(height) return paginateLedger(wt.spellListData, height) end},
     levels = {top = -72, reserve = 12, footer = wt.L.LEDGER_HINT, empty = wt.L.LEDGER_EMPTY,
+        otherClassFooter = wt.L.OTHER_CLASS_HINT,
         Render = renderLevels,
         Items = function() return wholeBlocks(buildGroups(wt.spellListData)) end,
         Paginate = function(height, columns) return paginateLevels(buildGroups(wt.spellListData), height, columns) end},
     zone = {top = -84, footer = wt.L.LEDGER_WEAPON_HINT, empty = wt.L.LEDGER_WEAPON_EMPTY,
+        otherClassFooter = wt.L.OTHER_CLASS_WEAPON_HINT,
         Render = renderByCity, Items = function() return wt.weaponGroupedData end},
     weaponskill = {top = -84, footer = wt.L.LEDGER_WEAPON_HINT, empty = wt.L.LEDGER_WEAPON_EMPTY,
+        otherClassFooter = wt.L.OTHER_CLASS_WEAPON_HINT,
         Render = renderByWeapon, Items = function() return wt.weaponSkillGroupedData end},
     list = {top = -84, footer = wt.L.LEDGER_WEAPON_LIST_HINT, empty = wt.L.LEDGER_WEAPON_EMPTY,
+        otherClassFooter = wt.L.OTHER_CLASS_WEAPON_LIST_HINT,
         Render = renderList, Items = function() return wt.weaponListData end},
 }
 
@@ -312,7 +322,7 @@ local function updatePage(page, view, items, paged)
     scroll:SetPoint("TOPLEFT", page, "TOPLEFT", 0, view.top + CONTENT_RISE)
     scroll.ScrollBar:SetShown(not paged)
     scroll:EnableMouseWheel(not paged)
-    page.footer:SetText(view.footer)
+    page.footer:SetText(wt.viewedClass and view.otherClassFooter or view.footer)
     -- only Levels can end up empty from a search
     page.empty:SetText(wt.filter ~= "" and wt.L.SEARCH_NO_RESULTS or view.empty)
     page.empty:SetShown(#items == 0)

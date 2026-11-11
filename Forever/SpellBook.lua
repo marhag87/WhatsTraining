@@ -102,8 +102,19 @@ local function refresh(mainFrame)
     updateBanner(mainFrame)
     local expanded, weaponPage = mainFrame.expanded, mainFrame.weaponPage
     local dual = expanded and not mainFrame.sideBySide
-    mainFrame.title:SetText(expanded and wt.L.LEDGER_CLASS_SPELLS or wt.L.TITLE)
-    weaponPage.title:SetText(dual and wt.L.LEDGER_MORE_SPELLS or wt.L.WEAPON_SKILLS_HEADER)
+    -- browsing another class names it in every page title
+    local viewed = wt.viewedClass and wt.className(wt.viewedClass)
+    local spellsTitle = expanded and wt.L.LEDGER_CLASS_SPELLS or wt.L.TITLE
+    local moreTitle, weaponsTitle = wt.L.LEDGER_MORE_SPELLS, wt.L.WEAPON_SKILLS_HEADER
+    if viewed then
+        weaponsTitle = string.format(wt.L.OTHER_CLASS_WEAPONS_TITLE, viewed)
+        moreTitle = string.format(wt.L.OTHER_CLASS_MORE_TITLE, viewed)
+        -- the single page shows either list under one title
+        spellsTitle = (expanded or not wt.showingWeaponSkills) and string.format(wt.L.OTHER_CLASS_TITLE, viewed)
+            or weaponsTitle
+    end
+    mainFrame.title:SetText(spellsTitle)
+    weaponPage.title:SetText(dual and moreTitle or weaponsTitle)
     mainFrame.titleBackplate:SetWidth(math.min(mainFrame.header:GetWidth() + 85,
         math.max(416, mainFrame.title:GetStringWidth() * 2.5)))
     weaponPage.titleBackplate:SetWidth(math.min(weaponPage.header:GetWidth() + 85,
@@ -115,7 +126,8 @@ local function refresh(mainFrame)
     weaponPage.continues:SetShown(false)
     local spells, weapons = views[WT_SpellDisplay], views[WT_WeaponGrouping]
     local leftView = not expanded and wt.showingWeaponSkills and weapons or spells
-    mainFrame.total:GetParent():SetShown(leftView == spells)
+    -- the price total and its discounts are for your own class
+    mainFrame.total:GetParent():SetShown(leftView == spells and not wt.viewedClass)
     local rows, base = wt.availablePriceRows()
     local price = wt.priceIn(wt.priceKey(rows), rows, base)
     mainFrame.total:SetText(string.format(wt.L.LEDGER_AVAILABLE_TOTAL, C_CurrencyInfo.GetCoinTextureString(price)))
@@ -391,6 +403,14 @@ local function createLedger(mainFrame)
         return active ~= nil and active.id == id
     end
     local function generateSettings(_, rootDescription)
+        rootDescription:CreateTitle(wt.L.OTHER_CLASS_MENU_TITLE)
+        local classes = rootDescription:CreateButton(wt.className(wt.viewedClass or wt.currentClass))
+        for _, token in ipairs(wt.browsableClasses()) do
+            local name = wt.className(token)
+            if token == wt.currentClass then name = string.format(wt.L.OTHER_CLASS_YOURS, name) end
+            classes:CreateRadio(name, wt.IsViewedClass, wt.SetViewedClass, token)
+        end
+        rootDescription:CreateDivider()
         rootDescription:CreateTitle(wt.L.LEDGER_OPT_CLASS_HEADER)
         rootDescription:CreateRadio(wt.L.DISPLAY_LEVELS, isStyle, wt.SetSpellDisplay, "levels")
         rootDescription:CreateRadio(wt.L.GROUP_LIST, isStyle, wt.SetSpellDisplay, "ledger")

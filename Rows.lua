@@ -22,6 +22,8 @@ function wt.InsertLink(spell)
 end
 
 function wt.weaponStatus(row)
+    -- another class's skill: when that class can train it, not whether you know it
+    if row.otherClass then return row.formattedLevel, "body" end
     local isKnown = row.isKnown
     if isKnown == nil then isKnown = wt.isAbilityKnown(row.id) end
     if isKnown then return wt.L.LEDGER_WEAPON_KNOWN, "dim" end
@@ -70,7 +72,10 @@ function wt.SetTooltip(tooltip, row, palette)
             end
         end
         if row.cost and row.cost > 0 then
-            if row.key == wt.AVAILABLE_KEY then
+            if row.otherClass then
+                -- reputation discounts follow your own class's trainers, so show the base cost
+                tooltip:AddLine(wt.formatSpellCost(row))
+            elseif row.key == wt.AVAILABLE_KEY then
                 wt.addPricingBlock(tooltip, row, (wt.availableSpells()))
                 if not (InputUtil and InputUtil.IsGamepadUIEnabled and InputUtil.IsGamepadUIEnabled()) then
                     tooltip:AddLine(wt.L.PRICE_MENU_HINT, 0.5, 0.5, 0.5)
@@ -89,7 +94,8 @@ function wt.SetTooltip(tooltip, row, palette)
     end
     if row.tooltip then tooltip:AddLine(row.tooltip) end
     tooltip:Show()
-    wt.ShowRankComparison(tooltip, tooltip:GetOwner(), wt.knownRankFor(row))
+    -- another class's spell has no rank of yours to compare with
+    wt.ShowRankComparison(tooltip, tooltip:GetOwner(), not row.otherClass and wt.knownRankFor(row) or nil)
 end
 
 local function openContextMenu(owner, generator)
@@ -112,7 +118,8 @@ function wt.RowClick(frame, row, button)
         end
     elseif button == "LeftButton" and IsShiftKeyDown() then
         wt.InsertLink(row)
-    elseif button == "RightButton" then
+    elseif button == "RightButton" and not row.otherClass then
+        -- the ignore list is for your own spells
         wt.ClickHook(row, function() wt:RebuildData() end, frame)
     end
 end

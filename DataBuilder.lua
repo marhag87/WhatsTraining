@@ -455,16 +455,17 @@ end
 
 -- Rebuild wt.weaponGroupedData from the stashed wrappers, keeping only those matching wt.filter.
 -- The assembler drops empty masters/zones, so a filtered wrapper map prunes correctly.
-local function buildFilteredGroupedData()
+-- wrapperById, ignoredIds: the player's own, or the browsed class's (see OtherClass.lua).
+local function buildFilteredGroupedData(wrapperById, ignoredIds)
     wipe(wt.weaponGroupedData)
-    if not wt.weaponSkeleton or not wt.WeaponGrouping or not wt.weaponWrapperById then return end
+    if not wt.weaponSkeleton or not wt.WeaponGrouping or not wrapperById then return end
 
     local filteredWrappers
     if wt.filter == '' and WT_ShowKnownWeaponSkills then
-        filteredWrappers = wt.weaponWrapperById
+        filteredWrappers = wrapperById
     else
         filteredWrappers = {}
-        for weaponId, wrapper in pairs(wt.weaponWrapperById) do
+        for weaponId, wrapper in pairs(wrapperById) do
             if matchesFilter(wrapper.searchText) and (WT_ShowKnownWeaponSkills or not wrapper.isKnown) then
                 filteredWrappers[weaponId] = wrapper
             end
@@ -472,7 +473,7 @@ local function buildFilteredGroupedData()
     end
 
     local rows = wt.WeaponGrouping.assembleList(wt.weaponSkeleton, filteredWrappers,
-        wt.weaponIgnoredIds, wt.L.WEAPON_IGNORED_HEADER)
+        ignoredIds, wt.L.WEAPON_IGNORED_HEADER)
     for _, row in ipairs(rows) do
         tinsert(wt.weaponGroupedData, row)
     end
@@ -480,19 +481,19 @@ end
 
 -- Rebuild wt.weaponSkillGroupedData from the shared wrappers, applying behavior-B
 -- filtering inside the assembler (pass the lowercased filter through).
-local function buildFilteredSkillGroupedData()
+local function buildFilteredSkillGroupedData(wrapperById, ignoredIds)
     wipe(wt.weaponSkillGroupedData)
-    if not wt.weaponSkillSkeleton or not wt.WeaponGrouping or not wt.weaponWrapperById then return end
+    if not wt.weaponSkillSkeleton or not wt.WeaponGrouping or not wrapperById then return end
 
-    local wrappers = wt.weaponWrapperById
+    local wrappers = wrapperById
     if not WT_ShowKnownWeaponSkills then
         wrappers = {}
-        for id, wrapper in pairs(wt.weaponWrapperById) do
+        for id, wrapper in pairs(wrapperById) do
             if not wrapper.isKnown then wrappers[id] = wrapper end
         end
     end
     local rows = wt.WeaponGrouping.assembleSkillList(wt.weaponSkillSkeleton, wrappers,
-        wt.weaponIgnoredIds, wt.L.WEAPON_IGNORED_HEADER, wt.filter)
+        ignoredIds, wt.L.WEAPON_IGNORED_HEADER, wt.filter)
     for _, row in ipairs(rows) do
         tinsert(wt.weaponSkillGroupedData, row)
     end
@@ -502,17 +503,27 @@ function wt.applyFilter()
     wipe(wt.spellListData)
     wipe(wt.weaponListData)
 
-    filterCategoryData(wt.spellCategoryData, wt.spellListData)
-    filterCategoryData(wt.weaponCategoryData, wt.weaponListData)
+    local spellCategoryData, weaponCategoryData = wt.spellCategoryData, wt.weaponCategoryData
+    local weaponWrapperById, weaponIgnoredIds = wt.weaponWrapperById, wt.weaponIgnoredIds
+    if wt.viewedClass then
+        -- browsing another class: its spells and weapon skills replace the player's (no spells
+        -- while they load); the ignore list is the player's, so nothing is ignored
+        local entry = wt.otherClassEntry(wt.viewedClass)
+        spellCategoryData = entry and {entry} or {}
+        local weapons = wt.otherClassWeapons(wt.viewedClass)
+        weaponCategoryData, weaponWrapperById, weaponIgnoredIds = {weapons.entry}, weapons.wrapperById, {}
+    end
+    filterCategoryData(spellCategoryData, wt.spellListData)
+    filterCategoryData(weaponCategoryData, wt.weaponListData)
 
     -- Only ONE grouped assembler may run per pass: each stamps wrapper.indent on the
     -- shared wrappers, so assembling both would clobber the other's indents. Assemble
     -- exactly the grouped view that is currently selected.
     local mode = WT_WeaponGrouping
     if mode == "weaponskill" then
-        buildFilteredSkillGroupedData()
+        buildFilteredSkillGroupedData(weaponWrapperById, weaponIgnoredIds)
     elseif mode ~= "list" then
-        buildFilteredGroupedData()
+        buildFilteredGroupedData(weaponWrapperById, weaponIgnoredIds)
     end
 
     local weaponData = selectWeaponData()

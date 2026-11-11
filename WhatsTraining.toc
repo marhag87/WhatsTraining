@@ -66,6 +66,7 @@ Crafting\ProfessionTabs.lua [AllowLoadGameType classic][ExcludeLoadGameType came
 Crafting\Crafting.xml [AllowLoadGameType camelot][ExcludeLoadGameType classic]
 Categories.lua
 DataBuilder.lua
+OtherClass.lua
 WhatsTraining.lua
 
 Broker.lua

@@ -183,6 +183,8 @@ read_globals = {
     "ERR_LEARN_SPELL_S",
     "WHITE_FONT_COLOR",
     "RAID_CLASS_COLORS",
+    "LOCALIZED_CLASS_NAMES_MALE",
+    "C_CreatureInfo",
     "WOW_PROJECT_ID",
     "WOW_PROJECT_BURNING_CRUSADE_CLASSIC",
     "CHECK_ALL",
