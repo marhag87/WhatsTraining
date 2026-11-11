@@ -586,7 +586,9 @@ function wt.EnableControllerBook(root, mainFrame, place, updatePreview)
         elseif button == "PADDUP" or button == "PADDDOWN" or button == "PADDLEFT" or button == "PADDRIGHT" then
             move(button)
         elseif button == "PAD3" and selected then
-            if selected.spell and not selected.spell.isHeader and not selected.spell.npc then openSpellMenu(selected)
+            if selected.spell and not selected.spell.isHeader and not selected.spell.npc then
+                -- another class's spells have no ignore menu
+                if not selected.spell.otherClass then openSpellMenu(selected) end
             else selected:GetScript("OnClick")(selected, "LeftButton") end
         elseif button == "PAD4" then
             mainFrame.categoryBanner:GetScript("OnClick")(mainFrame.categoryBanner)

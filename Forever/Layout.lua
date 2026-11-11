@@ -12,7 +12,9 @@ local function buildGroups(data)
         if spell.isHeader then
             category, group = spell, nil
         else
-            local level = (category.key == wt.NEXTLEVEL_KEY or category.key == wt.NOTLEVEL_KEY) and spell.level or nil
+            local byLevel = category.key == wt.NEXTLEVEL_KEY or category.key == wt.NOTLEVEL_KEY
+                or category.key == wt.OTHER_CLASS_KEY
+            local level = byLevel and spell.level or nil
             if not group or group.level ~= level then
                 group = {category = category, level = level, spells = {}, cost = 0}
                 tinsert(groups, group)
